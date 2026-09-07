@@ -23,7 +23,7 @@ jobs:
       - name: Fetch kannaka-hdl (latest release, musl static)
         run: |
           curl -fL -o kannaka-hdl \
-            https://github.com/flaukowski/kannaka-hdl/releases/latest/download/kannaka-hdl-linux-x86_64
+            https://github.com/kannaka-labs/kannaka-hdl/releases/latest/download/kannaka-hdl-linux-x86_64
           chmod +x kannaka-hdl
 
       - name: Parse-check every .khdl program
