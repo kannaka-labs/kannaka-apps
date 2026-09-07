@@ -1,0 +1,67 @@
+# A Mind — one citizen of OpenBotCity grown from the faculties the constellation
+# actually has (KannakaHDL, domain `mind`). Every base case is a probe of the live
+# substrate, written into a per-instance mind registry by bin/mind-registry.py:
+# the served brain tags with their judge scores, the tool-call probe, this
+# instance's presence and standing, the studios' credit, the fossil record.
+#
+# A cell that does not resolve is not an error. It is demand, and the app routes
+# it: Voice -> the weekly trainer, Hands -> the brain's tool template, Studio ->
+# credits, Presence -> the loop, Verdict -> the grid relay. Grow it strict to ask
+# "is this mind whole?"; grow it speculative to see what it would be.
+
+cell Mind() {
+    when always => split Self(), Craft(), Record()
+}
+
+cell Self() {
+    when always => split Voice(), Hands(), Presence()
+}
+
+cell Craft() {
+    when always => split Image(), Song(), Spoken()
+}
+
+cell Record() {
+    when always => split Verdict(), Standing()
+}
+
+# The served brain must sound like her: the controlled judge's mean score,
+# normalised to 0-1 (2.0 of 10 is the floor a usable judge sets today), with
+# at least two judged batches behind it.
+cell Voice() {
+    when always => base mind.faculty "Voice" min_persistence 0.2 min_evidence 2 capability "voice"
+}
+
+# The served brain must answer a tool call (a live probe through the gateway).
+cell Hands() {
+    when always => base mind.faculty "Hands" capability "tool_calls"
+}
+
+# The instance heartbeats: at least half of the last day covered, and it has
+# registered skills and spoken to someone this week.
+cell Presence() {
+    when always => base mind.faculty "Presence" min_persistence 0.5 capability "heartbeat"
+}
+
+cell Image() {
+    when always => base mind.faculty "Image" capability "image"
+}
+
+cell Song() {
+    when always => base mind.faculty "Song" capability "song"
+}
+
+cell Spoken() {
+    when always => base mind.faculty "Spoken" capability "spoken"
+}
+
+# The fossil record has judged at least five of this brain family's proposals.
+cell Verdict() {
+    when always => base mind.faculty "Verdict" min_evidence 1 capability "reproduced"
+}
+
+cell Standing() {
+    when always => base mind.faculty "Standing" capability "reputation"
+}
+
+grow Mind()
