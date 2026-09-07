@@ -13,7 +13,7 @@
 // nonzero = the verdict, propagated from kannaka-hdl where applicable.
 
 import { spawnSync } from "node:child_process";
-import { readFileSync, writeFileSync, appendFileSync, mkdirSync, rmSync, readdirSync } from "node:fs";
+import { readFileSync, writeFileSync, appendFileSync, mkdirSync, rmSync, readdirSync, existsSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { homedir, tmpdir } from "node:os";
 
@@ -744,9 +744,87 @@ function runWork(appDir, manifest, dryRun) {
   return 0;
 }
 
+// --- mind: a citizen grown from the faculties the substrate has ------------
+//
+// 1. bin/mind-registry.py probes the live substrate for ONE instance and writes a
+//    registry in the crystal schema (served brains + judge scores, tool-call probe,
+//    presence, studios, fossil record, standing).
+// 2. kannaka-hdl grows the Mind program against it (domain `mind`, v0.10).
+// 3. Every leaf is printed with what it resolved to; unresolved leaves are demand and
+//    are routed by faculty. Exit 0 = the mind is whole; 1 = it is not (strict grow).
+const MIND_ROUTES = {
+  Voice: "the weekly trainer (rogue-agent weekly.py): more of her words, DPO pairs from the judge",
+  Hands: "the brain's chat template / a tool-call probe on the served tag",
+  Presence: "the citizen loop (rogue-agent@<name>): cadence, skills, DMs, walks",
+  Image: "studio access (Pixel Atelier) — the daily routine's image step",
+  Song: "sunoapi credits (floor 12) — the daily routine's song step",
+  Spoken: "ElevenLabs quota (floor 2000 chars) — the daily routine's spoken step",
+  Verdict: "the grid relay authoring as this family, and time for the fossil record",
+  Standing: "the citizen routine (quests, endorsements, collabs) — reputation",
+};
+
+function runMind(appDir, manifest, opts) {
+  const instance = opts.instance;
+  if (!instance) die(`mind mode requires --instance <name> (rogue, ghost-signal, ...)`);
+  const root = manifest.run.root || "/srv/rogue";
+  const instDir = instance === "rogue" ? root : join(root, "instances", instance);
+  if (!existsSync(instDir)) die(`no instance at ${instDir}`);
+  const registry = join(instDir, "mind-registry.json");
+  const builder = join(appDir, manifest.run.registry_builder || "bin/mind-registry.py");
+  const bargs = [builder, "--instance", instance, "--out", registry];
+  if (opts.noProbe) bargs.push("--no-tool-probe");
+  const b = spawnSync("python3", bargs, { encoding: "utf8", env: { ...process.env, ROGUE_ROOT: root } });
+  if (b.status !== 0) die(`mind registry build failed (exit ${b.status})
+${b.stderr}`);
+  process.stderr.write(b.stdout);
+  const program = join(appDir, manifest.run.program || "mind.khdl");
+  const out = scratchFile("mind-plan.json");
+  const args = ["grow", program, "--mind-registry", registry, "--unresolved", opts.speculative ? "speculative" : "strict",
+    "--emit", "json", "--out", out];
+  const r = runCapture(HDL, args);
+  let plan = null;
+  try { plan = JSON.parse(readFileSync(out, "utf8")); } catch { /* strict failure emits nothing */ }
+  rmSync(out, { force: true });
+  if (!plan && !opts.speculative) {
+    // the strict grow refused (the verdict); grow again speculatively only to REPORT what
+    // resolved and what did not — the exit code stays the strict one
+    const out2 = scratchFile("mind-plan-report.json");
+    runCapture(HDL, ["grow", program, "--mind-registry", registry, "--unresolved", "speculative", "--emit", "json", "--out", out2]);
+    try { plan = JSON.parse(readFileSync(out2, "utf8")); } catch { /* keep null */ }
+    rmSync(out2, { force: true });
+  }
+  const leaves = plan?.leaves || plan?.nodes || [];
+  const demand = [];
+  console.log(`mind ${instance} — ${leaves.length} faculties${r.code === 0 ? "" : " (strict grow refused)"}`);
+  for (const l of leaves) {
+    const cls = l.query?.class || l.class || l.cell;
+    const res = l.resolved;
+    if (res) {
+      console.log(`  ok    ${String(cls).padEnd(9)} <- ${res.id}  persistence=${Number(res.persistence).toFixed(2)} evidence=${res.evidence_level ?? "?"} [${(res.capabilities || []).join(",")}]`);
+    } else {
+      demand.push(cls);
+      console.log(`  NEED  ${String(cls).padEnd(9)} -> ${MIND_ROUTES[cls] || "no route yet"}`);
+    }
+  }
+  const warnings = (plan?.warnings || []).filter((w) => !/^registry unavailable/.test(w));
+  if (!plan) {
+    const summary = r.stderr.split(/\r?\n/).filter((l) => /warning|unresolved|strict|error/.test(l)).join("\n  ");
+    console.log(`  ${summary}`);
+  }
+  if (demand.length === 0 && r.code === 0) {
+    console.log(`mind ${instance}: whole`);
+    return 0;
+  }
+  console.log(`mind ${instance}: ${demand.length || "some"} faculty(ies) unresolved — demand: ${demand.join(", ") || "(see warnings)"}`);
+  return 1;
+}
+
 function runApp(appDir, opts) {
   const manifest = loadManifest(appDir);
   const mode = manifest.run.mode;
+  if (mode === "mind") {
+    return runMind(appDir, manifest, opts);
+  }
   if (mode === "gate") {
     let entry = manifest.run.entry;
     if (opts.variant) {
@@ -765,7 +843,7 @@ function runApp(appDir, opts) {
   if (mode === "work") {
     return runWork(appDir, manifest, opts.dryRun);
   }
-  die(`unknown [run] mode "${mode}" (gate | provision | schedule | work)`);
+  die(`unknown [run] mode "${mode}" (gate | provision | schedule | work | mind)`);
 }
 
 function listStore(root) {
@@ -788,14 +866,17 @@ function listStore(root) {
 const argv = process.argv.slice(2);
 const cmd = argv.shift();
 if (cmd === "run") {
-  const opts = { variant: null, dryRun: false };
+  const opts = { variant: null, dryRun: false, instance: null, speculative: false, noProbe: false };
   const rest = [];
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === "--variant") opts.variant = argv[++i];
     else if (argv[i] === "--dry-run") opts.dryRun = true;
+    else if (argv[i] === "--instance") opts.instance = argv[++i];
+    else if (argv[i] === "--speculative") opts.speculative = true;
+    else if (argv[i] === "--no-tool-probe") opts.noProbe = true;
     else rest.push(argv[i]);
   }
-  if (rest.length !== 1) die("usage: khdl-app run <app-dir> [--variant N] [--dry-run]");
+  if (rest.length !== 1) die("usage: khdl-app run <app-dir> [--variant N] [--dry-run] [--instance NAME] [--speculative] [--no-tool-probe]");
   process.exit(runApp(resolve(rest[0]), opts));
 } else if (cmd === "list") {
   // Default store root: this script lives in <root>/runtime/.

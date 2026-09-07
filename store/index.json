@@ -11,6 +11,15 @@
       "variants": []
     },
     {
+      "name": "mind",
+      "version": "0.1.0",
+      "description": "A citizen grown from the faculties the constellation actually has — served brains, tool calls, presence, studios, the fossil record",
+      "kind": "mind",
+      "path": "apps/mind",
+      "source": "store",
+      "variants": []
+    },
+    {
       "name": "preflight",
       "version": "0.1.0",
       "description": "Memory integrity gate — run before any one-way HRM operation",

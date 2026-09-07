@@ -1,0 +1,12 @@
+[app]
+name = "mind"
+version = "0.1.0"
+description = "A citizen grown from the faculties the constellation actually has — served brains, tool calls, presence, studios, the fossil record"
+kind = "mind"
+
+[run]
+mode = "mind"
+program = "mind.khdl"
+registry_builder = "bin/mind-registry.py"
+# Where the substrate lives (debain2). --instance NAME selects one citizen's registry.
+root = "/srv/rogue"
