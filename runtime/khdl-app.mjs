@@ -785,9 +785,17 @@ ${b.stderr}`);
   let plan = null;
   try { plan = JSON.parse(readFileSync(out, "utf8")); } catch { /* strict failure emits nothing */ }
   rmSync(out, { force: true });
+  if (!plan && !opts.speculative) {
+    // the strict grow refused (the verdict); grow again speculatively only to REPORT what
+    // resolved and what did not — the exit code stays the strict one
+    const out2 = scratchFile("mind-plan-report.json");
+    runCapture(HDL, ["grow", program, "--mind-registry", registry, "--unresolved", "speculative", "--emit", "json", "--out", out2]);
+    try { plan = JSON.parse(readFileSync(out2, "utf8")); } catch { /* keep null */ }
+    rmSync(out2, { force: true });
+  }
   const leaves = plan?.leaves || plan?.nodes || [];
   const demand = [];
-  console.log(`mind ${instance} — ${leaves.length} faculties${plan ? "" : " (strict grow refused; re-run with --speculative to see the plan)"}`);
+  console.log(`mind ${instance} — ${leaves.length} faculties${r.code === 0 ? "" : " (strict grow refused)"}`);
   for (const l of leaves) {
     const cls = l.query?.class || l.class || l.cell;
     const res = l.resolved;
