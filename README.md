@@ -30,6 +30,17 @@ node runtime/khdl-app.mjs run apps/provisioner --dry-run
 | [provisioner](apps/provisioner/) | provision | Genesis: seed a node's required memory architecture (dark anchors only), then prove it by gate |
 | [research-scheduler](apps/research-scheduler/) | schedule | Demand side of the §14 loop: rank unresolved capability demand, record + announce crystal work orders, attribute resolutions ([ADR-0002](docs/adr/0002-research-scheduler.md)) |
 | [crystal-worker](apps/crystal-worker/) | work | Supply side: consume the order book with bounded `kannaka-crystal evolve` shifts; fulfil orders when the registry gains a qualifying primitive |
+| [mind](apps/mind/) | mind | A citizen grown from the faculties the constellation actually has — served brains, tool calls, presence, studios, the fossil record |
+
+## Through the QuantumOS hub
+
+The store is reachable from any AI through [QuantumOS's hub](https://github.com/kannaka-labs/QuantumOS/tree/main/tools/qos-hub)
+(ADR-0027): one policy-gated MCP endpoint for the constellation's CLIs. The hub's example
+config carries an `apps` entry whose tools are allowlisted argv templates of this runner:
+`apps.list` and `apps.plan` (`run <app> --dry-run`, executes nothing) are allowed; `apps.run`
+asks the person first, because a provision, schedule or work app is a one-way operation on
+live memory. Nothing in this repository changes for that: the runner's `run`/`list` verbs are
+the contract, and `--dry-run` is the read-only half of it.
 
 ## Why this shape
 
