@@ -1,7 +1,7 @@
 # kannaka-apps
 
 The KannakaHDL app store: declarative applications whose blueprint is a
-[kannaka-hdl](https://github.com/flaukowski/kannaka-hdl) growth program,
+[kannaka-hdl](https://github.com/kannaka-labs/kannaka-hdl) growth program,
 resolved against live substrate (the running HRM, the crystal registry,
 registered composites) and judged by expect gates. The imperative part
 stays in one thin host: `runtime/khdl-app.mjs`.

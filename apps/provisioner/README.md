@@ -24,7 +24,7 @@ similarity scores currently depend on `--top-k` when the HRM holds only a
 handful of memories (measured 2026-08-06: 5-memory HRM, exact-text match
 scores 0.99999 at k=3 but 0.033 at k≥4; the memory provider recalls at
 top-k 8). Until
-[kannaka-memory#716](https://github.com/NickFlach/kannaka-memory/issues/716)
+[kannaka-memory#716](https://github.com/kannaka-labs/kannaka-memory/issues/716)
 is fixed, a freshly-seeded near-empty node can fail its re-gate even though
 the seeds landed — the one-round bound reports this honestly instead of
 looping. Nodes with fleet-scale HRMs (hundreds of memories) are unaffected
